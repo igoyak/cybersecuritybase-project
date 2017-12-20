@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Account</title>
+</head>
+<body>
+
+<div>
+    <h1>Welcome
+        <span th:text="${username}"></span>
+    </h1>
+    <p>Your password is: <span th:text="${password}"></span></p>
+
+    <a href="/delete">Delete my account</a>
+
+    <div th:if="${username == 'admin'}" style="border: 2px solid black">
+        <p>As admin, you can see all accounts and delete all accounts</p>
+        <li th:each="account : ${accounts}">
+            <span th:text="${account.username}">item username</span> - <span th:text="${account.password}">value</span>
+        </li>
+        <form action="#" th:action="@{/deleteall}" method="POST">
+            <p><input type="submit" value="DELETE ALL ACCOUNTS"/></p>
+        </form>
+    </div>
+
+    <a href="/">Logout</a>
+</div>
+<p></p>
+</body>
+</html>
