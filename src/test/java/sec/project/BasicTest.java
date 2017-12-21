@@ -16,7 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
-import sec.project.repository.SignupRepository;
+import sec.project.repository.AccountRepository;
 
 import javax.servlet.http.Cookie;
 
@@ -28,7 +28,7 @@ public class BasicTest {
     private WebApplicationContext webAppContext;
 
     @Autowired
-    private SignupRepository signupRepository;
+    private AccountRepository accountRepository;
 
     private MockMvc mockMvc;
 
@@ -48,21 +48,21 @@ public class BasicTest {
 
     @Test
     public void MissingAccessControlVulnerability() throws Throwable {
-        assertTrue(signupRepository.findAll().size() != 0);
-        System.out.println(signupRepository.findAll().size());
+        assertTrue(accountRepository.findAll().size() != 0);
+        System.out.println(accountRepository.findAll().size());
         MvcResult res = mockMvc.perform(post("/deleteall")).andExpect(status().is3xxRedirection()).andReturn();
         String responseString = res.getResponse().getContentAsString();
         System.out.println(responseString);
-        System.out.println(signupRepository.findAll().size());
-        assertTrue(signupRepository.findAll().size() == 0);
+        System.out.println(accountRepository.findAll().size());
+        assertTrue(accountRepository.findAll().size() == 0);
     }
 
     @Test
     public void CSRFVulnerability() throws Throwable {
         Long idToDelete = 1L;
-        assertNotNull(signupRepository.findOne(idToDelete));
+        assertNotNull(accountRepository.findOne(idToDelete));
         MvcResult res = mockMvc.perform(get("/delete").cookie(new Cookie("accountid", String.valueOf(idToDelete)))).andExpect(status().is3xxRedirection()).andReturn();
-        assertNull(signupRepository.findOne(idToDelete));
+        assertNull(accountRepository.findOne(idToDelete));
     }
 
 

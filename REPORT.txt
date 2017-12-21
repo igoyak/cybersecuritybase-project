@@ -1,0 +1,137 @@
+This is a simple web application that allows users to sign up for an account and also remove their account.
+The admin user is able to see all accounts and respective passwords. We consider the ability to access or remove
+someone else's account a security issue.
+
+Source code: https://github.com/igoyak/cybersecuritybase-project
+
+Copy of this report (might be easier to read): https://github.com/igoyak/cybersecuritybase-project/blob/master/REPORT.txt
+
+Check the README for info on how to run the application.
+It is assumed from here on that the application is running and that it is restarted between each vulnerability to reset the state.
+
+VULNERABILITY 1: A3-Cross-Site Scripting (XSS) https://www.owasp.org/index.php/Top_10_2013-A3-Cross-Site_Scripting_(XSS)
+
+Because of this Reflected XSS vulnerability, an attacker could trick the victim into visiting a specially crafted URL,
+causing arbitrary code to be executed in the victim's browser. This could be used to for example steal the victim's cookies.
+
+This vulnerability can be discovered simply by trying to access arbitrary URLs, and noticing that the resulting HTML
+contains a decoded version of that URL.
+
+Steps to reproduce:
+
+1. Open the following URL in a browser:
+http://localhost:8080/%3Cscript%3Ealert('Executing%20arbitrary%20javascript');%3C/script%3E
+
+2. The javascript in the URL is interpreted and executed in the browser (Note: This might not work in modern versions
+of Chrome because of a security feature)
+
+
+Fixing the issue:
+
+The issue is here: https://github.com/igoyak/cybersecuritybase-project/blob/master/src/main/java/sec/project/controller/AccountController.java#L36
+It can be fixed by simply removing the call to URLDecoder.decode(). This will stop the URL from being interpreted and
+the victim's browser won't execute any malicious code.
+
+
+VULNERABILITY 2: A7-Missing Function Level Access Control https://www.owasp.org/index.php/Top_10_2013-A7-Missing_Function_Level_Access_Control
+
+The ability to delete all accounts should only be available for Admin, but because of the missing access control,
+anyone who knows the URL can perform the action.
+
+This vulnerability can be discovered by trying many URLs until the correct one is found, or guess the URL based on the
+functionality.
+
+Steps to reproduce:
+
+1a. Either run the following cURL command:
+curl http://localhost:8080/deleteall -XPOST
+
+1b. Or open the file 'attacks/missing_access_control.html' in a browser and click the button
+
+2. All accounts were deleted without authentication.
+
+
+Fixing the issue:
+
+The issue is here: https://github.com/igoyak/cybersecuritybase-project/blob/master/src/main/java/sec/project/controller/AccountController.java#L127
+To fix the issue, the cookie needs to validated and it needs to be confirmed that the user really is Admin.
+
+
+VULNERABILITY 3: A2-Broken Authentication and Session Management https://www.owasp.org/index.php/Top_10_2013-A2-Broken_Authentication_and_Session_Management
+
+On successful login, the user gets a session token as a cookie, which is validated in future request to verify the identity.
+The problem is that the token scheme is too simple. Namely, it is a simple integer which corresponds to a database index.
+Since it is easily guessable, an attacker could access the accounts of other users.
+
+This vulnerability can be discovered by observing the content of the cookie when logging into an account or creating new accounts.
+
+Steps to reproduce:
+
+1a. Either run the following cURL command:
+curl http://localhost:8080/account -H 'cookie: accountid=1'
+
+1b. Or set the cookie to 'accountid=1' using the browser's developer tools and then go to the url:
+http://localhost:8080/account
+
+(Detailed instructions to set cookie in Chrome: Navigate to the application. Press F12 to open the developer tools.
+Click on the 'Application' tab. On the left, under 'Cookies', click 'http://localhost:8080'.
+Double-click on the 'Name' column and add the cookie 'accountid' if it doesn't already exist. Set the 'Value' to be 1. )
+
+2. The admin page is now displayed, or returned, containing all usernames and passwords.
+
+
+Fixing the issue:
+
+The issue is here (among other places): https://github.com/igoyak/cybersecuritybase-project/blob/master/src/main/java/sec/project/controller/AccountController.java#L93
+Instead of using the database index for the session token, a random uuid could be generated.
+This would then be stored temporarily in the application and would resolve this problem since it would be hard to guess.
+An even better solution would be to use readily available features from the framework instead of inventing a new system.
+
+
+
+VULNERABILITY 4: A8-Cross-Site Request Forgery (CSRF) https://www.owasp.org/index.php/Top_10_2013-A8-Cross-Site_Request_Forgery_(CSRF)
+
+By not requiring a CSRF token in requests, it is possible to trick a victim into deleting their own account by having them
+open a page with an image which points to the application. Because the victim's cookie is sent with the request, the application
+assumes the request was intended by the user.
+
+This vulnerability can be discovered by noticing that no CSRF token is needed to perform destructive actions.
+
+Steps to reproduce:
+
+1. Login as any user (for example username: 'a', password 'a'). This will set the cookie.
+
+2. Open (in a new tab) the file 'attacks/csrf.html'. When the image tries to load, it deletes the account.
+
+3. Reload the application. You are now logged out, and are unable to login again.
+
+Fixing the issue:
+
+The issue is here: https://github.com/igoyak/cybersecuritybase-project/blob/master/src/main/java/sec/project/config/SecurityConfiguration.java#L26
+The CSRF protection should not be turned off. Additionally, the endpoint for deleting the account should accept POST
+requests instead of GET requests.
+
+
+VULNERABILITY 5: A10-Unvalidated Redirects and Forwards https://www.owasp.org/index.php/Top_10_2013-A10-Unvalidated_Redirects_and_Forwards
+
+If the user trusts this application, they might also trust any site to which they are redirected from this application.
+Therefore, only trusted sites should be allowed as redirect targets. This application allows redirecting anywhere, however.
+
+The vulnerability can be found by running ZAP (2.7.0) https://github.com/zaproxy/zaproxy/wiki/Downloads
+Under 'Quickstart', choose to attack 'http://localhost:8080'. It will warn about 'External Redirect'.
+It can also be found by simply using the interface.
+
+Steps to reproduce:
+
+1. Open the following URL in a browser:
+http://localhost:8080/login?redirect=http://owasp.org
+2. The browser redirects to owasp.org. This can be repeated with any URL.
+
+Fixing the issue:
+
+The issue is here: https://github.com/igoyak/cybersecuritybase-project/blob/master/src/main/java/sec/project/controller/AccountController.java#L62
+Instead of redirecting anywhere, the application could whitelist a set of trusted URLs and deny all others.
+
+
+
+

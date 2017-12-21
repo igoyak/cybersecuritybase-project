@@ -7,7 +7,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import sec.project.domain.Account;
-import sec.project.repository.SignupRepository;
+import sec.project.repository.AccountRepository;
 
 import javax.persistence.EntityNotFoundException;
 import javax.servlet.http.Cookie;
@@ -17,10 +17,10 @@ import java.net.URLDecoder;
 import java.util.Optional;
 
 @Controller
-public class SignupController {
+public class AccountController {
 
     @Autowired
-    private SignupRepository signupRepository;
+    private AccountRepository accountRepository;
 
     @RequestMapping("/")
     public String defaultMapping() {
@@ -34,19 +34,21 @@ public class SignupController {
         Vulnerability 1: A3-Cross-Site Scripting (XSS)
          */
         String resp = "<h1>Not Found</h1><p>Sorry, could not find " + URLDecoder.decode(request.getRequestURI()) + "</p>";
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(resp);
+        //return ResponseEntity.status(HttpStatus.NOT_FOUND).body(resp);
+        // TODO
+        return ResponseEntity.status(HttpStatus.OK).body(resp);
 
     }
 
     @RequestMapping(value = "/createAccount", method = RequestMethod.POST)
     public String createAccount(@RequestParam String username, @RequestParam String password, HttpServletResponse response) {
-        if (signupRepository.findAll()
+        if (accountRepository.findAll()
                 .stream()
                 .anyMatch(a -> a.getUsername().equals(username))) {
             // Account already exists
             return "redirect:/login";
         }
-        Account newAccount = signupRepository.save(new Account(username, password));
+        Account newAccount = accountRepository.save(new Account(username, password));
         response.addCookie(new Cookie("accountid", newAccount.getId().toString()));
         return "redirect:/account/";
     }
@@ -65,15 +67,10 @@ public class SignupController {
 
     @RequestMapping(value = "/login", method = RequestMethod.POST)
     public String loginPost(@RequestParam String username, @RequestParam String password, HttpServletResponse response) {
-        Optional<Account> account = signupRepository.findAll()
+        Optional<Account> account = accountRepository.findAll()
                 .stream()
                 .filter(a -> a.getUsername().equals(username) && a.getPassword().equals(password)).findFirst();
-        System.out.println("login account: ");
-        System.out.println(account);
         if (account.isPresent()) {
-            System.out.println(account.get());
-            System.out.println(account.get().getUsername());
-            System.out.println(account.get().getPassword());
             Long id = account.get().getId();
             response.addCookie(new Cookie("accountid", id.toString()));
 
@@ -93,11 +90,10 @@ public class SignupController {
         System.out.println("/account/ cookie is: " + accountIDString);
         try {
             Long accountID = Long.parseLong(accountIDString, 10);
-            Account a = signupRepository.getOne(accountID);
-            System.out.println(a);
+            Account a = accountRepository.getOne(accountID);
             model.addAttribute("username", a.getUsername());
             model.addAttribute("password", a.getPassword());
-            model.addAttribute("accounts", signupRepository.findAll());
+            model.addAttribute("accounts", accountRepository.findAll());
             return "account";
         } catch (EntityNotFoundException | NumberFormatException e) {
             return "redirect:/login";
@@ -112,8 +108,8 @@ public class SignupController {
         System.out.println("/delete/ cookie is: " + accountIDString);
         try {
             Long accountID = Long.parseLong(accountIDString, 10);
-            Account a = signupRepository.getOne(accountID);
-            signupRepository.delete(accountID);
+            Account a = accountRepository.getOne(accountID);
+            accountRepository.delete(accountID);
             System.out.println("Deleted account: " + accountID.toString());
         } catch (EntityNotFoundException | NumberFormatException e) {
         }
@@ -128,7 +124,7 @@ public class SignupController {
          This should only be available for Admin, but anyone with the URL can
          call this.
           */
-        signupRepository.deleteAll();
+        accountRepository.deleteAll();
         return "redirect:/login";
     }
 
