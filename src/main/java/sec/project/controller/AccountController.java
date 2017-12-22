@@ -34,9 +34,9 @@ public class AccountController {
         Vulnerability 1: A3-Cross-Site Scripting (XSS)
          */
         String resp = "<h1>Not Found</h1><p>Sorry, could not find " + URLDecoder.decode(request.getRequestURI()) + "</p>";
-        //return ResponseEntity.status(HttpStatus.NOT_FOUND).body(resp);
-        // TODO
-        return ResponseEntity.status(HttpStatus.OK).body(resp);
+
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(resp);
 
     }
 

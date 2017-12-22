@@ -59,7 +59,7 @@ To fix the issue, the cookie needs to validated and it needs to be confirmed tha
 
 VULNERABILITY 3: A2-Broken Authentication and Session Management https://www.owasp.org/index.php/Top_10_2013-A2-Broken_Authentication_and_Session_Management
 
-On successful login, the user gets a session token as a cookie, which is validated in future request to verify the identity.
+On successful login, the user gets a session token as a cookie, which is validated in future requests to verify the identity.
 The problem is that the token scheme is too simple. Namely, it is a simple integer which corresponds to a database index.
 Since it is easily guessable, an attacker could access the accounts of other users.
 
